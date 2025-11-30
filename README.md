@@ -153,19 +153,25 @@ The UI includes:
 
 ## 📦 Project Structure
 
+<pre>
 privscore/
 │
-├── hardhat/ # smart contracts + deploy scripts
-│ └── contracts/
-│ └── scripts/
-├── frontend/ # React + Vite UI
-│ ├── src/App.jsx
-│ ├── src/index.css
-│ └── ...
+|   # smart contracts + deploy scripts
+├── contracts/
+|
+├── frontend/         # React + Vite UI
+│   ├── src/App.jsx
+│   ├── src/index.css
+│   └── ...
 │
-├── worker/ # decrypting worker / local relayer
+├── relayer-local/
+├── relayer-proxy/
+├── Scripts/   
+├── worker/           # decrypting worker / local relayer
 │
-└── README.md
+└── README.md         # you are here
+</pre>
+
 
 
 ---
