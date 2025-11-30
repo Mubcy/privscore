@@ -164,10 +164,10 @@ privscore/
 │   ├── src/index.css
 │   └── ...
 │
-├── relayer-local/
+├── relayer-local/    # local relayer
 ├── relayer-proxy/
 ├── Scripts/   
-├── worker/           # decrypting worker / local relayer
+├── worker/           # decrypting worker
 │
 └── README.md         # you are here
 </pre>
