@@ -1,0 +1,7 @@
+>>> worker booting — top of file reached
+CWD: C:\Users\Jimoh\privscore\worker
+NODE env preview: {
+  RPC_URL: 'http://127.0.0.1:8545',
+  CONTRACT_ADDR: '0xe7f1725E',
+  WORKER_PRIVATE_KEY: true
+}

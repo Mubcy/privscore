@@ -1,0 +1,117 @@
+// relayer/index.js
+// Local mock relayer for testing purposes only
+// Usage: node relayer/index.js
+// Requires: npm i express ethers cors dotenv
+
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const { ethers } = require("ethers");
+
+const PORT = process.env.RELAYER_PORT ? Number(process.env.RELAYER_PORT) : 3000;
+const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:8545";
+const CONTRACT_ADDR = process.env.CONTRACT_ADDR || "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853";
+
+const app = express();
+app.use(express.json());
+// allow your frontend origin (adjust if needed)
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173" }));
+
+const provider = new ethers.JsonRpcProvider(RPC_URL);
+const privscoreAbi = [
+  "function getEncryptedPayload(address user, uint256 modelId) external view returns (bytes memory)"
+];
+
+const contract = new ethers.Contract(CONTRACT_ADDR, privscoreAbi, provider);
+
+function normalizeHandleToBytes32(hexOrString) {
+  // If input is plain text (not hex), hash it first to bytes32
+  if (typeof hexOrString !== "string") hexOrString = String(hexOrString);
+  // if already hex and 66 chars (0x + 64) keep it
+  if (/^0x[0-9a-fA-F]{64}$/.test(hexOrString)) return hexOrString;
+  // if it's hex-ish shorter, pad it; otherwise keccak256 the utf8 bytes
+  if (/^0x[0-9a-fA-F]+$/.test(hexOrString)) {
+    try {
+      return ethers.utils.hexZeroPad(hexOrString, 32);
+    } catch (e) {
+      // fallthrough
+    }
+  }
+  // otherwise hash text to 32 bytes
+  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(hexOrString));
+}
+
+app.post("/public-decrypt", async (req, res) => {
+  try {
+    const { contract: contractAddrBody, user, modelId } = req.body || {};
+
+    // guard
+    if (!user || typeof modelId === "undefined") {
+      return res.status(400).json({ error: "missing 'user' or 'modelId' in body" });
+    }
+
+    console.log("public-decrypt request:", { user, modelId, contractFromBody: contractAddrBody });
+
+    // 1) Read encrypted payload from chain
+    const callData = await contract.getEncryptedPayload(user, modelId).catch(e => {
+      console.warn("getEncryptedPayload failed:", e.message || e);
+      return "0x";
+    });
+
+    if (!callData || callData === "0x") {
+      console.log("No encrypted payload found on-chain for user/model");
+      // Return an empty handles/proof but include a numeric 'value' if the worker computed it previously.
+      // For local testing, return an example value so frontend can proceed.
+      return res.json({ handles: [], decryptionProof: "0x", value: null });
+    }
+
+    // callData is bytes (e.g. abi-encoded bytes). Try to decode as UTF-8 text if possible:
+    let payloadText = null;
+    try {
+      // If the payload is raw bytes representing ASCII/UTF-8 text, decode.
+      // We attempt a best-effort conversion.
+      const asBytes = ethers.utils.arrayify(callData);
+      // skip initial length prefix if present (some patterns store raw)
+      // Try to interpret entire bytes as utf8
+      payloadText = ethers.utils.toUtf8String(asBytes);
+    } catch (e) {
+      // fallback: stringify hex
+      payloadText = callData;
+    }
+
+    console.log("raw payload (hex):", callData.slice(0, 200));
+    console.log("payload interpreted as text (best-effort):", payloadText);
+
+    // 2) Build deterministic handles & proof for testing:
+    // - one handle : keccak256(payloadText)  (32 bytes)
+    // - proof : keccak256(payloadText + user)
+    // - value: a numeric value derived from keccak mod 1000 (usable as score)
+    const handle = normalizeHandleToBytes32(payloadText || callData);
+    const proof = ethers.utils.keccak256(ethers.utils.concat([ethers.utils.toUtf8Bytes(String(payloadText || "")), ethers.utils.arrayify(user)]));
+    // compute a toy numeric score:
+    const numericHash = ethers.BigNumber.from(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(String(payloadText || ""))));
+    const value = numericHash.mod(1000).toNumber();
+
+    // 3) Return JSON in expected shape:
+    const response = {
+      handles: [handle],          // bytes32[]
+      decryptionProof: proof,     // bytes
+      value: value,               // clear value(s) (worker may expect this)
+      debug: {
+        payloadText,
+        rawHex: callData
+      }
+    };
+
+    console.log("public-decrypt response preview:", response.debug ? { value: response.value, handle: response.handles[0].slice(0, 10) } : response);
+    return res.json(response);
+  } catch (err) {
+    console.error("public-decrypt handler error:", err && err.stack ? err.stack : err);
+    return res.status(500).json({ error: String(err && err.message ? err.message : err) });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Local test relayer listening on http://localhost:${PORT} (RPC ${RPC_URL})`);
+  console.log(`Using PrivScore contract: ${CONTRACT_ADDR}`);
+});
