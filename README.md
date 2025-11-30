@@ -1,13 +1,13 @@
 # PrivScore — Confidential Encrypted Survey Scoring
 
-**PrivScore** is a decentralized system that collects **fully encrypted survey responses**, decrypts them securely off-chain, and publishes **verifiable scores** on-chain — without exposing any raw data.  
+**PrivScore** is a decentralized system that collects **fully encrypted survey responses**, decrypts them securely off-chain, and publishes **verifiable scores** on-chain without exposing any raw data.  
 It demonstrates a practical architecture for privacy-preserving computation using encrypted payloads, off-chain workers/relayers, and on-chain verification.
 
 Live Demo (Frontend Only):  
 👉 **https://privscore.vercel.app/**
 
 For the demo, the blockchain and the worker/relayer run locally.  
-This is intentional — details explained below.
+This is intentional details explained below.
 
 ---
 
@@ -88,7 +88,7 @@ Frontend displays scores + proofs
 
 ## ⚠ Why the Demo Uses a Local Node & Local Relayer
 
-### ⭐ 1. Stability for the judges  
+### ⭐ 1. Stability
 Local Hardhat chain provides:
 
 - Instant transactions  
@@ -119,7 +119,7 @@ To demonstrate both primary and fallback modes smoothly, a local environment is 
 
 ---
 
-### ⭐ 4. Simpler Reproduction for Reviewers  
+### ⭐ 4. Simpler Reproduction  
 Judges can:
 
 - Clone the repo  
