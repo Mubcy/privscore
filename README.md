@@ -158,7 +158,6 @@ privscore/
 ├── hardhat/ # smart contracts + deploy scripts
 │ └── contracts/
 │ └── scripts/
-│
 ├── frontend/ # React + Vite UI
 │ ├── src/App.jsx
 │ ├── src/index.css
